@@ -1,0 +1,36 @@
+# image: "docker:stable"
+# image: "debian:stretch"
+image: crank/foroffice-debian-cicd
+
+# before_script:
+#   - apt-get update && apt-get install -y docker-compose
+
+stages:
+  - build
+  - deploy_dev
+  - deploy_prod
+    
+build:
+  stage: build
+  script:
+    - docker-compose build
+    # - docker info
+
+deploy_dev:
+  stage: deploy_dev
+  script:
+    - echo "Start deploy on develop server"
+    - fab -H root@test.foroffice.ru docker-deploy
+  when: manual
+
+deploy_prod:
+  stage: deploy_prod
+  script:
+    - echo "Start deploy on production"
+    # - eval $(ssh-agent -s)
+    # - ssh-add <(echo "$SSH_PRIVATE_KEY")
+    # - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    # - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+    # - ssh foroffice@84.201.140.146 "cd /home/foroffice/docker && git pull origin master && docker-compose build && exit"
+    - fab -H foroffice@img1.foroffice.ru docker-deploy
+  when: manual

@@ -1,0 +1,20 @@
+# /*
+# !/.vscode
+# !/docker
+# !/backup
+# !docker-compose.yml
+# !.gitignore
+# !default.variables.env
+# !assets
+# !test-compose.py
+
+/db
+/logs
+/www
+/lost+found
+/variables.env
+
+node_modules
+assets/npm-debug.log
+/symfony
+/laravel

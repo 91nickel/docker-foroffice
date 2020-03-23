@@ -1,0 +1,19 @@
+pip-tools
+
+# libs
+piexif # working with images metadata
+click # console apps
+#packaging
+pyopenssl
+
+# API clients
+google-api-python-client # google api
+
+# xml, html parsing
+lxml
+
+# databases drivers
+mysqlclient
+
+# remote debug
+ptvsd

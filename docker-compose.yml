@@ -1,0 +1,156 @@
+version: '2'
+
+services:
+  # python:
+  #   build: ./docker/python
+  #   links: 
+  #     - mysql
+  #   volumes: 
+  #     - ./docker/python:/docker
+  #     - ./www:/srv/www/vhosts/www.rx8.ru/www
+
+  # DBGP_IDEKEY: sdf6sd4l56l4kGDLHKJSHLF8078
+  apache:
+    build: ./docker/apache
+    restart: always
+    entrypoint: sh /entrypoint.sh
+    env_file: ./variables.env
+    environment:
+      TZ: Europe/Moscow
+      XDEBUG_CONFIG: remote_host=host.docker.internal remote_port=9000 remote_enable=1 remote_autostart=off remote_connect_back=1 idekey=VSCODE profiler_output_dir=/tmp/profiler
+    links:
+      - mysql
+      - memcached
+      # - redis
+    volumes:
+      - ./www:/srv/www/vhosts/www.rx8.ru/www
+      - ./logs/apache:/foroffice/logs/apache
+      - ./docker/apache:/docker/apache
+      - ./logs/profiler:/tmp/profiler
+    # ports: 
+    #   - 3300:3300
+    #   - 9000:9000
+
+  nginx:
+    build: ./docker/nginx
+    restart: always
+    env_file: ./variables.env
+    ports:
+      - 80:80
+      - 443:443
+    entrypoint:
+      - nginx
+      - -g
+      - daemon off;
+    environment:
+      TZ: Europe/Moscow
+    links:
+      - apache
+    volumes:
+      - ./www:/foroffice/www
+      - ./logs/nginx:/var/log/nginx/
+      - ./docker/nginx/letsencrypt:/etc/letsencrypt
+
+  mysql:
+    # build: ./docker/mysql
+    build: ./docker/percona/
+    restart: unless-stopped # always
+    environment:
+      MYSQL_ROOT_PASSWORD: sdf6sd79GDS98gd8f76gdf_
+      MYSQL_DATABASE: foroffice
+      MYSQL_USER: bitrix_foroffice
+      MYSQL_PASSWORD: jhyu73hd883HYdm
+    # ports:
+    #   - 3306:3306
+    #   - 4444:4444
+    #   - 4567:4567
+    #   - 4568:4568
+    volumes:
+      - ./db/mysql:/var/lib/mysql
+      # - ./backup/mysql:/docker-entrypoint-initdb.d
+      - ./backup:/backup
+  
+  sphinx:
+    build: ./docker/sphinx
+    restart: unless-stopped # always
+    env_file: ./variables.env
+    entrypoint: sh /entrypoint.sh
+    volumes:
+      - ./db/sphinx:/var/lib/sphinxsearch/data/foroffice
+      - ./www:/srv/www/vhosts/www.rx8.ru/www
+      - ./logs/sphinx:/var/log/sphinxsearch
+    links: 
+      - mysql
+
+  memcached:
+    image: memcached:1.4.36
+    restart: unless-stopped
+    env_file: ./variables.env
+    command: memcached -m 10240m -I 10m
+    # command: memcached -m 8192m -I 10m
+    mem_limit: 10g
+    environment:
+      TZ: Europe/Moscow
+
+  assets:
+    restart: unless-stopped
+    build: docker/assets/
+    environment:
+      DEVELOPMENT: 1
+      TZ: Europe/Moscow
+    command: npm run watch
+    volumes:
+      - ./:/foroffice
+
+
+  redis:
+    # build: ./docker/redis
+    # image: redis:5.0.2-alpine
+    image: redis:5.0
+    restart: unless-stopped
+    mem_limit: 10g
+    volumes:
+      - ./logs/redis:/var/log/redis
+    command: redis-server --maxmemory 8000mb --maxmemory-policy volatile-ttl
+    environment:
+      TZ: Europe/Moscow
+
+  node:
+    build: ./docker/node
+    volumes:
+      - ./www/:/code
+    # command: npm run watch
+    command: npm run dev
+    environment: 
+      TZ: Europe/Moscow
+      # NODE_ENV: production
+    ports:
+      - 3000:3000
+
+  # datadog:
+  #   image: datadog/agent
+  #   restart: unless-stopped
+  #   environment:
+  #     DD_API_KEY: a71a6d50a16e069f58acc23412970814
+  #     DD_HOSTNAME: foroffice
+  #     DD_APM_ENABLED: 'true'
+  #     DD_PROCESS_AGENT_ENABLED: 'true'
+  #   volumes: 
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro 
+  #     - /proc/:/host/proc/:ro 
+  #     - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+  #     - ./docker/datadog/conf.d:/conf.d:ro
+
+  fab:
+    build: ./docker/debian-cicd
+    # restart: never
+    volumes: 
+      - ./docker/debian-cicd/fabfile.py:/fabfile.py
+
+
+  php:
+    build: ./docker/php
+    volumes:
+      - ./symfony:/code
+
+
