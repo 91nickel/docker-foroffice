@@ -10,7 +10,7 @@
     "less": "^2.7.2",
     "recursive-readdir": "^2.2.2",
     "uglify-js": "^3.0.11",
-    "webpack": "^2.6.1"
+    "webpack": "^5.75.0"
   },
   "scripts": {
     "watch": "node minificator.js >> ../logs/assets/minificator-log.txt",
